@@ -19,7 +19,7 @@ func main() {
 		},
 		Identity: &tmigo.Identity{
 			Username: "your_bot_name",
-			Password: "oauth:your_bot_token", // Get token from https://twitchapps.com/tmi/
+			Password: "oauth:your_bot_token", // See README for how to obtain OAuth token
 		},
 		Channels: []string{
 			"your_channel",

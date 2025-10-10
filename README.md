@@ -1,4 +1,4 @@
-# tmigo
+# tmigo [![License](https://img.shields.io/github/license/Ktnuity/tmigo)](https://github.com/Ktnuity/tmigo/blob/master/LICENSE)
 
 A Go port of [tmi.js](https://github.com/tmijs/tmi.js) - A Twitch Messaging Interface library for Go.
 
@@ -199,7 +199,17 @@ Identity: &tmigo.Identity{
 
 ## Getting an OAuth Token
 
-Get your OAuth token from: https://twitchapps.com/tmi/
+To connect your bot to Twitch IRC, you'll need an OAuth token. Follow the official Twitch documentation to properly obtain an OAuth token for your bot:
+
+**[Twitch Authentication Documentation](https://dev.twitch.tv/docs/authentication/)**
+
+For chat bots, you'll typically want to:
+1. Register your application in the [Twitch Developer Console](https://dev.twitch.tv/console)
+2. Use the OAuth Authorization Code Flow or Implicit Grant Flow
+3. Request the `chat:read` and `chat:edit` scopes at minimum
+4. Additional scopes may be needed depending on your bot's functionality (e.g., `channel:moderate` for moderation commands)
+
+**Note:** The token should be prefixed with `oauth:` when used with tmigo, or the library will add it automatically.
 
 ## Type System
 
@@ -272,7 +282,7 @@ See [example/main.go](example/main.go) for a complete working example.
 
 ## License
 
-MIT
+tmigo is released under the [MIT License](https://github.com/Ktnuity/tmigo/blob/master/LICENSE).
 
 ## Credits
 
