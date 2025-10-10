@@ -72,6 +72,7 @@ func setupEventHandlers(client *tmigo.Client) {
 	})
 
 	// Message event
+	// Note: tags is map[string]any, but for typed access you can convert to ChatUserstate
 	client.On("message", func(args ...any) {
 		channel := args[0].(string)
 		tags := args[1].(map[string]any)
@@ -87,6 +88,14 @@ func setupEventHandlers(client *tmigo.Client) {
 		if val, ok := tags["username"].(string); ok {
 			username = val
 		}
+
+		// You can also check for specific fields from ChatUserstate:
+		// - tags["display-name"] for display name
+		// - tags["color"] for username color
+		// - tags["badges"] for user badges (map[string]string)
+		// - tags["subscriber"] for subscriber status (bool)
+		// - tags["mod"] for moderator status (bool)
+		// - tags["bits"] for bit amount in cheers (string)
 
 		log.Printf("[%s] %s: %s", channel, username, message)
 

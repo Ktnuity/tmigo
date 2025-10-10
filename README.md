@@ -201,6 +201,61 @@ Identity: &tmigo.Identity{
 
 Get your OAuth token from: https://twitchapps.com/tmi/
 
+## Type System
+
+tmigo provides comprehensive type definitions matching the official `@types/tmi.js` package:
+
+### Userstate Types
+
+Event handlers receive tags as `map[string]any`, but the library provides typed structures for better code clarity:
+
+- **`ChatUserstate`** - For chat messages and actions
+- **`SubUserstate`** - For subscription events
+- **`SubGiftUserstate`** - For gifted subscriptions
+- **`SubMysteryGiftUserstate`** - For mystery gift subs
+- **`AnonSubGiftUserstate`** - For anonymous gifted subs
+- **`AnonSubMysteryGiftUserstate`** - For anonymous mystery gift subs
+- **`SubGiftUpgradeUserstate`** - For gift subscription upgrades
+- **`AnonSubGiftUpgradeUserstate`** - For anonymous gift upgrades
+- **`PrimeUpgradeUserstate`** - For Prime subscription upgrades
+- **`RaidUserstate`** - For raid events
+- **`RitualUserstate`** - For ritual events (e.g., new chatter)
+- **`BanUserstate`** - For ban events
+- **`TimeoutUserstate`** - For timeout events
+- **`DeleteUserstate`** - For message deletion events
+
+### Common Tag Fields
+
+When handling events, you can access these common fields from the tags map:
+
+```go
+client.On("message", func(args ...any) {
+    tags := args[1].(map[string]any)
+
+    // Common fields available:
+    username := tags["username"].(string)
+    displayName := tags["display-name"].(string)
+    color := tags["color"].(string)
+
+    // Badge information
+    badges := tags["badges"].(map[string]string)
+    isMod := tags["mod"].(bool)
+    isSub := tags["subscriber"].(bool)
+
+    // Message metadata
+    userID := tags["user-id"].(string)
+    roomID := tags["room-id"].(string)
+    messageID := tags["id"].(string)
+})
+```
+
+### Other Types
+
+- **`SubMethod`** - Subscription tiers: `"Prime"`, `"1000"`, `"2000"`, `"3000"`
+- **`MsgID`** - Twitch notice message IDs (70+ constants like `MsgIDTimeoutSuccess`)
+- **`RoomState`** - Channel state information (emote-only, followers-only, slow mode, etc.)
+- **`EmoteObj`** - Emote set information
+
 ## Differences from tmi.js
 
 While this library aims to maintain API compatibility with tmi.js, there are some differences due to Go's nature:
@@ -209,6 +264,7 @@ While this library aims to maintain API compatibility with tmi.js, there are som
 2. **Callbacks**: Event handlers use `func(args ...any)` instead of typed callbacks.
 3. **Concurrency**: The library is designed to be thread-safe with proper mutex usage.
 4. **Error Handling**: Methods return errors in idiomatic Go style.
+5. **Type System**: Comprehensive type definitions are provided matching `@types/tmi.js` for better code documentation.
 
 ## Example
 
