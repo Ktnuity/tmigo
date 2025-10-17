@@ -11,9 +11,19 @@
 //	    Channels: []string{"channel1", "channel2"},
 //	})
 //
+//	// Type-safe event handlers (recommended)
+//	client.OnMessage(func(channel string, userstate ChatUserstate, message string, self bool) {
+//	    if !self {
+//	        log.Printf("[%s] %s: %s", channel, userstate.Username, message)
+//	    }
+//	})
+//
+//	// Or use the generic On() method with manual type assertions
 //	client.On("message", func(args ...any) {
 //	    channel := args[0].(string)
+//	    userstate := args[1].(ChatUserstate)
 //	    message := args[2].(string)
+//	    self := args[3].(bool)
 //	    // Handle message
 //	})
 //

@@ -181,7 +181,8 @@ func (c *Client) handleTwitchMessage(message *IRCMessage, channel, msg, msgid st
 			}
 			message.Tags["message-type"] = "messagedeleted"
 			c.state.log.Info(fmt.Sprintf("[%s] %s's message has been deleted.", channel, username))
-			c.Emit("messagedeleted", channel, username, msg, message.Tags)
+			userstate := convertToDeleteUserstate(message.Tags)
+			c.Emit("messagedeleted", channel, username, msg, userstate)
 		}
 
 	case "RECONNECT":
@@ -240,7 +241,8 @@ func (c *Client) handleTwitchMessage(message *IRCMessage, channel, msg, msgid st
 		}
 
 		message.Tags["channel"] = channel
-		c.Emit("roomstate", channel, message.Tags)
+		roomstate := convertToRoomState(message.Tags)
+		c.Emit("roomstate", channel, roomstate)
 
 		c.handleRoomState(message, channel)
 	}
@@ -394,8 +396,9 @@ func (c *Client) handleUserMessage(message *IRCMessage, channel, msg string) {
 		message.Tags["message-type"] = "whisper"
 
 		from := Channel(nick)
+		userstate := convertToChatUserstate(message.Tags)
 		c.Emits([]string{"whisper", "message"}, [][]any{
-			{from, message.Tags, msg, false},
+			{from, userstate, msg, false},
 		})
 
 	case "PRIVMSG":
@@ -410,28 +413,33 @@ func (c *Client) handleUserMessage(message *IRCMessage, channel, msg string) {
 		if isAction {
 			message.Tags["message-type"] = "action"
 			c.state.log.Info(fmt.Sprintf("[%s] *<%s>: %s", channel, message.Tags["username"], actionMsg))
+			userstate := convertToChatUserstate(message.Tags)
 			c.Emits([]string{"action", "message"}, [][]any{
-				{channel, message.Tags, actionMsg, false},
+				{channel, userstate, actionMsg, false},
 			})
 		} else {
 			message.Tags["message-type"] = "chat"
 
 			// Check for bits
 			if _, hasBits := message.Tags["bits"]; hasBits {
-				c.Emit("cheer", channel, message.Tags, msg)
+				userstate := convertToChatUserstate(message.Tags)
+				c.Emit("cheer", channel, userstate, msg)
 			} else {
 				// Check for channel point redemptions
 				if msgID, ok := message.Tags["msg-id"].(string); ok {
 					if msgID == "highlighted-message" || msgID == "skip-subs-mode-message" {
-						c.Emit("redeem", channel, message.Tags["username"], msgID, message.Tags, msg)
+						userstate := convertToChatUserstate(message.Tags)
+						c.Emit("redeem", channel, message.Tags["username"], msgID, userstate, msg)
 					}
 				} else if rewardID, ok := message.Tags["custom-reward-id"].(string); ok {
-					c.Emit("redeem", channel, message.Tags["username"], rewardID, message.Tags, msg)
+					userstate := convertToChatUserstate(message.Tags)
+					c.Emit("redeem", channel, message.Tags["username"], rewardID, userstate, msg)
 				}
 
 				c.state.log.Info(fmt.Sprintf("[%s] <%s>: %s", channel, message.Tags["username"], msg))
+				userstate := convertToChatUserstate(message.Tags)
 				c.Emits([]string{"chat", "message"}, [][]any{
-					{channel, message.Tags, msg, false},
+					{channel, userstate, msg, false},
 				})
 			}
 		}
@@ -510,8 +518,10 @@ func (c *Client) handleUserNotice(message *IRCMessage, channel, msg, msgid strin
 
 	switch msgid {
 	case "sub":
+		methods := convertToSubMethods(message.Tags)
+		userstate := convertToSubUserstate(message.Tags)
 		c.Emits([]string{"subscription", "sub"}, [][]any{
-			{channel, username, message.Tags, msg},
+			{channel, username, methods, msg, userstate},
 		})
 
 	case "resub":
@@ -519,30 +529,39 @@ func (c *Client) handleUserNotice(message *IRCMessage, channel, msg, msgid strin
 		if val, ok := message.Tags["msg-param-streak-months"].(string); ok {
 			streakMonths = ParseInt(val)
 		}
+		methods := convertToSubMethods(message.Tags)
+		userstate := convertToSubUserstate(message.Tags)
 		c.Emits([]string{"resub", "subanniversary"}, [][]any{
-			{channel, username, streakMonths, msg, message.Tags},
+			{channel, username, streakMonths, msg, userstate, methods},
 		})
 
 	case "subgift":
+		streakMonths := 0
+		if val, ok := message.Tags["msg-param-months"].(string); ok {
+			streakMonths = ParseInt(val)
+		}
 		recipient := ""
 		if val, ok := message.Tags["msg-param-recipient-display-name"].(string); ok {
 			recipient = val
 		}
-		c.Emit("subgift", channel, username, recipient, message.Tags)
+		methods := convertToSubMethods(message.Tags)
+		userstate := convertToSubGiftUserstate(message.Tags)
+		c.Emit("subgift", channel, username, streakMonths, recipient, methods, userstate)
 
 	case "raid":
 		viewers := 0
 		if val, ok := message.Tags["msg-param-viewerCount"].(string); ok {
 			viewers = ParseInt(val)
 		}
-		c.Emit("raided", channel, username, viewers, message.Tags)
+		c.Emit("raided", channel, username, viewers)
 
 	case "announcement":
 		color := ""
 		if val, ok := message.Tags["msg-param-color"].(string); ok {
 			color = val
 		}
-		c.Emit("announcement", channel, message.Tags, msg, false, color)
+		userstate := convertToChatUserstate(message.Tags)
+		c.Emit("announcement", channel, userstate, msg, false, color)
 
 	default:
 		c.Emit("usernotice", msgid, channel, message.Tags, msg)
@@ -584,11 +603,13 @@ func (c *Client) handleClearChat(message *IRCMessage, channel, msg string) {
 
 		if duration == "" {
 			c.state.log.Info(fmt.Sprintf("[%s] %s has been banned.", channel, msg))
-			c.Emit("ban", channel, msg, nil, message.Tags)
+			userstate := convertToBanUserstate(message.Tags)
+			c.Emit("ban", channel, msg, "", userstate)
 		} else {
 			durationInt, _ := strconv.Atoi(duration)
 			c.state.log.Info(fmt.Sprintf("[%s] %s has been timed out for %d seconds.", channel, msg, durationInt))
-			c.Emit("timeout", channel, msg, nil, durationInt, message.Tags)
+			userstate := convertToTimeoutUserstate(message.Tags)
+			c.Emit("timeout", channel, msg, "", durationInt, userstate)
 		}
 	} else {
 		// Chat cleared
