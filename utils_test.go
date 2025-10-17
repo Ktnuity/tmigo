@@ -17,7 +17,7 @@ func TestJustinfan(t *testing.T) {
 	if username == username2 {
 		// It's possible (but unlikely) they're the same, try a few more times
 		allSame := true
-		for i := 0; i < 10; i++ {
+		for range 10 {
 			if Justinfan() != username {
 				allSame = false
 				break

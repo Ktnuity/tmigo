@@ -191,7 +191,7 @@ func TestEventEmitter_SetMaxListenersZero(t *testing.T) {
 	ee := NewEventEmitter()
 	ee.SetMaxListeners(0) // Unlimited
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		ee.On("test", func(args ...any) {})
 	}
 
@@ -301,12 +301,10 @@ func TestEventEmitter_Concurrency(t *testing.T) {
 	ee.On("test", handler)
 
 	var wg sync.WaitGroup
-	for i := 0; i < 100; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 100 {
+		wg.Go(func() {
 			ee.Emit("test")
-		}()
+		})
 	}
 
 	wg.Wait()
@@ -387,21 +385,17 @@ func TestEventEmitter_ConcurrentAddRemove(t *testing.T) {
 	var wg sync.WaitGroup
 
 	// Concurrently add listeners
-	for i := 0; i < 50; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 50 {
+		wg.Go(func() {
 			ee.On("test", func(args ...any) {})
-		}()
+		})
 	}
 
 	// Concurrently emit events
-	for i := 0; i < 50; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 50 {
+		wg.Go(func() {
 			ee.Emit("test")
-		}()
+		})
 	}
 
 	// Give some time for goroutines to run
