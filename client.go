@@ -145,6 +145,10 @@ func NewClient(opts *ClientOptions) *Client {
 	return client
 }
 
+func (c *Client) SetLogLevel(logLevel string) error {
+	return c.state.log.SetLevel(logLevel)
+}
+
 // Connect establishes a connection to the Twitch IRC server
 func (c *Client) Connect() error {
 	c.mu.Lock()
