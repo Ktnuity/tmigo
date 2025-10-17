@@ -73,26 +73,12 @@ type IRCMessage struct {
 }
 
 // BadgeInfo represents badge-info from Twitch
+// TypeScript: { subscriber?: string; [other: string]: string | undefined; }
 type BadgeInfo map[string]string
 
 // Badges represents user badges from Twitch
-type Badges struct {
-	Admin       string
-	Bits        string
-	Broadcaster string
-	Partner     string
-	GlobalMod   string
-	Moderator   string
-	VIP         string
-	Subscriber  string
-	Staff       string
-	Turbo       string
-	Premium     string
-	Founder     string
-	BitsLeader  string
-	SubGifter   string
-	Other       map[string]string // For any other badges
-}
+// TypeScript: { admin?: string; bits?: string; ... [other: string]: string | undefined; }
+type Badges map[string]string
 
 // Emotes represents emote data
 type Emotes []EmotePosition
@@ -114,8 +100,8 @@ type EmoteObj map[string][]EmoteSet
 
 // EmoteSet represents a single emote in a set
 type EmoteSet struct {
-	Code string
-	ID   int
+	Code string `json:"code"`
+	ID   int    `json:"id"`
 }
 
 // SubMethod represents subscription tier
@@ -130,9 +116,9 @@ const (
 
 // SubMethods contains subscription method information
 type SubMethods struct {
-	Prime    bool
-	Plan     SubMethod
-	PlanName string
+	Prime    bool      `json:"prime,omitempty"`
+	Plan     SubMethod `json:"plan,omitempty"`
+	PlanName string    `json:"planName,omitempty"`
 }
 
 // MsgID represents Twitch notice message IDs
@@ -218,85 +204,108 @@ const (
 )
 
 // CommonUserstate contains fields common to all userstate types
+// TypeScript has [paramater: string]: any - use Extra field for additional properties
 type CommonUserstate struct {
-	Badges       map[string]string
-	BadgeInfo    map[string]string
-	Color        string
-	DisplayName  string
-	Emotes       map[string][]string
-	ID           string
-	Mod          bool
-	Turbo        bool
-	EmotesRaw    string
-	BadgesRaw    string
-	BadgeInfoRaw string
-	RoomID       string
-	Subscriber   bool
-	UserType     string // "", "mod", "global_mod", "admin", or "staff"
-	UserID       string
-	TMISentTs    string
-	Flags        string
-	MessageType  string
+	Badges       map[string]string   `json:"badges,omitempty"`
+	BadgeInfo    map[string]string   `json:"badge-info,omitempty"`
+	Color        string              `json:"color,omitempty"`
+	DisplayName  string              `json:"display-name,omitempty"`
+	Emotes       map[string][]string `json:"emotes,omitempty"`
+	ID           string              `json:"id,omitempty"`
+	Mod          bool                `json:"mod,omitempty"`
+	Turbo        bool                `json:"turbo,omitempty"`
+	EmotesRaw    string              `json:"emotes-raw,omitempty"`
+	BadgesRaw    string              `json:"badges-raw,omitempty"`
+	BadgeInfoRaw string              `json:"badge-info-raw,omitempty"`
+	RoomID       string              `json:"room-id,omitempty"`
+	Subscriber   bool                `json:"subscriber,omitempty"`
+	UserType     string              `json:"user-type,omitempty"` // "", "mod", "global_mod", "admin", or "staff"
+	UserID       string              `json:"user-id,omitempty"`
+	TMISentTs    string              `json:"tmi-sent-ts,omitempty"`
+	Flags        string              `json:"flags,omitempty"`
+	MessageType  string              `json:"message-type,omitempty"`
+	// Extra holds any additional fields from [parameter: string]: any
+	Extra        map[string]any      `json:"-"`
+}
+
+// GetExtra retrieves a value from the Extra map with a default fallback.
+// If the key doesn't exist or the type assertion fails, orElse is returned.
+func GetExtra[T any](cu *CommonUserstate, key string, orElse T) T {
+	if cu.Extra == nil {
+		return orElse
+	}
+
+	val, ok := cu.Extra[key]
+	if !ok {
+		return orElse
+	}
+
+	result, ok := val.(T)
+	if !ok {
+		return orElse
+	}
+
+	return result
 }
 
 // DeleteUserstate contains information about a deleted message
 type DeleteUserstate struct {
-	Login       string
-	Message     string
-	TargetMsgID string
+	Login       string `json:"login,omitempty"`
+	Message     string `json:"message,omitempty"`
+	TargetMsgID string `json:"target-msg-id,omitempty"`
 }
 
 // UserNoticeState extends CommonUserstate for user notices
 type UserNoticeState struct {
 	CommonUserstate
-	Login     string
-	Message   string
-	SystemMsg string
+	Login     string `json:"login,omitempty"`
+	Message   string `json:"message,omitempty"`
+	SystemMsg string `json:"system-msg,omitempty"`
 }
 
 // CommonSubUserstate extends UserNoticeState for subscription events
 type CommonSubUserstate struct {
 	UserNoticeState
-	MsgParamSubPlan     SubMethod
-	MsgParamSubPlanName string
+	MsgParamSubPlan     SubMethod `json:"msg-param-sub-plan,omitempty"`
+	MsgParamSubPlanName string    `json:"msg-param-sub-plan-name,omitempty"`
 }
 
 // CommonGiftSubUserstate extends CommonSubUserstate for gift subscriptions
 type CommonGiftSubUserstate struct {
 	CommonSubUserstate
-	MsgParamRecipientDisplayName string
-	MsgParamRecipientID          string
-	MsgParamRecipientUserName    string
-	MsgParamMonths               string
+	MsgParamRecipientDisplayName string `json:"msg-param-recipient-display-name,omitempty"`
+	MsgParamRecipientID          string `json:"msg-param-recipient-id,omitempty"`
+	MsgParamRecipientUserName    string `json:"msg-param-recipient-user-name,omitempty"`
+	MsgParamMonths               string `json:"msg-param-months,omitempty"`
 }
 
 // ChatUserstate represents userstate for chat messages
 type ChatUserstate struct {
 	CommonUserstate
-	Username string
-	Bits     string
+	Username string `json:"username,omitempty"`
+	Bits     string `json:"bits,omitempty"`
 }
 
 // SubUserstate represents userstate for subscription events
 type SubUserstate struct {
 	CommonSubUserstate
-	MsgParamCumulativeMonths  string
-	MsgParamShouldShareStreak bool
-	MsgParamStreakMonths      string
+	MsgParamCumulativeMonths  string `json:"msg-param-cumulative-months,omitempty"`
+	MsgParamShouldShareStreak bool   `json:"msg-param-should-share-streak,omitempty"`
+	MsgParamStreakMonths      string `json:"msg-param-streak-months,omitempty"`
 }
 
 // SubMysteryGiftUserstate represents userstate for mystery gift subs
 type SubMysteryGiftUserstate struct {
 	CommonSubUserstate
-	MsgParamSenderCount string
-	MsgParamOriginID    string
+	MsgParamSenderCount string `json:"msg-param-sender-count,omitempty"`
+	MsgParamOriginID    string `json:"msg-param-origin-id"`
 }
 
 // SubGiftUserstate represents userstate for gifted subs
 type SubGiftUserstate struct {
 	CommonGiftSubUserstate
-	MsgParamSenderCount string
-	MsgParamOriginID    string
+	MsgParamSenderCount string `json:"msg-param-sender-count,omitempty"`
+	MsgParamOriginID    string `json:"msg-param-origin-id"`
 }
 
 // AnonSubGiftUserstate represents userstate for anonymous gifted subs
@@ -312,8 +321,8 @@ type AnonSubMysteryGiftUserstate struct {
 // SubGiftUpgradeUserstate represents userstate for gift subscription upgrades
 type SubGiftUpgradeUserstate struct {
 	CommonSubUserstate
-	MsgParamSenderName  string
-	MsgParamSenderLogin string
+	MsgParamSenderName  string `json:"msg-param-sender-name,omitempty"`
+	MsgParamSenderLogin string `json:"msg-param-sender-login,omitempty"`
 }
 
 // AnonSubGiftUpgradeUserstate represents userstate for anonymous gift upgrades
@@ -329,69 +338,69 @@ type PrimeUpgradeUserstate struct {
 // RaidUserstate represents userstate for raid events
 type RaidUserstate struct {
 	UserNoticeState
-	MsgParamDisplayName string
-	MsgParamLogin       string
-	MsgParamViewerCount string
+	MsgParamDisplayName string `json:"msg-param-displayName,omitempty"`
+	MsgParamLogin       string `json:"msg-param-login,omitempty"`
+	MsgParamViewerCount string `json:"msg-param-viewerCount,omitempty"`
 }
 
 // RitualUserstate represents userstate for ritual events
 type RitualUserstate struct {
 	UserNoticeState
-	MsgParamRitualName string // "new_chatter"
+	MsgParamRitualName string `json:"msg-param-ritual-name,omitempty"` // "new_chatter"
 }
 
 // BanUserstate represents userstate for ban events
 type BanUserstate struct {
-	RoomID       string
-	TargetUserID string
-	TMISentTs    string
+	RoomID       string `json:"room-id,omitempty"`
+	TargetUserID string `json:"target-user-id,omitempty"`
+	TMISentTs    string `json:"tmi-sent-ts,omitempty"`
 }
 
 // TimeoutUserstate represents userstate for timeout events
 type TimeoutUserstate struct {
 	BanUserstate
-	BanDuration string
+	BanDuration string `json:"ban-duration,omitempty"`
 }
 
 // RoomState represents the state of a Twitch channel
 type RoomState struct {
-	BroadcasterLang string
-	EmoteOnly       bool
-	FollowersOnly   string // "-1" for off, or number of minutes
-	R9K             bool
-	Rituals         bool
-	RoomID          string
-	Slow            string // "0" for off, or number of seconds
-	SubsOnly        bool
-	Channel         string
+	BroadcasterLang string `json:"broadcaster-lang,omitempty"`
+	EmoteOnly       bool   `json:"emote-only,omitempty"`
+	FollowersOnly   string `json:"followers-only,omitempty"` // "-1" for off, or number of minutes
+	R9K             bool   `json:"r9k,omitempty"`
+	Rituals         bool   `json:"rituals,omitempty"`
+	RoomID          string `json:"room-id,omitempty"`
+	Slow            string `json:"slow,omitempty"` // "0" for off, or number of seconds
+	SubsOnly        bool   `json:"subs-only,omitempty"`
+	Channel         string `json:"channel,omitempty"`
 }
 
 // GlobalUserState contains global user state information
 type GlobalUserState struct {
-	BadgeInfo    map[string]string
-	Badges       map[string]string
-	Color        string
-	DisplayName  string
-	EmoteSets    string
-	UserID       string
-	UserType     string
-	BadgeInfoRaw string
-	BadgesRaw    string
+	BadgeInfo    map[string]string `json:"badge-info,omitempty"`
+	Badges       map[string]string `json:"badges,omitempty"`
+	Color        string            `json:"color,omitempty"`
+	DisplayName  string            `json:"display-name,omitempty"`
+	EmoteSets    string            `json:"emote-sets,omitempty"`
+	UserID       string            `json:"user-id,omitempty"`
+	UserType     string            `json:"user-type,omitempty"`
+	BadgeInfoRaw string            `json:"badge-info-raw,omitempty"`
+	BadgesRaw    string            `json:"badges-raw,omitempty"`
 }
 
 // UserState contains user state for a channel (kept for backward compatibility)
 type UserState struct {
-	BadgeInfo    map[string]string
-	Badges       map[string]string
-	Color        string
-	DisplayName  string
-	EmoteSets    string
-	Mod          bool
-	Subscriber   bool
-	UserType     string
-	BadgeInfoRaw string
-	BadgesRaw    string
-	Username     string
+	BadgeInfo    map[string]string `json:"badge-info,omitempty"`
+	Badges       map[string]string `json:"badges,omitempty"`
+	Color        string            `json:"color,omitempty"`
+	DisplayName  string            `json:"display-name,omitempty"`
+	EmoteSets    string            `json:"emote-sets,omitempty"`
+	Mod          bool              `json:"mod,omitempty"`
+	Subscriber   bool              `json:"subscriber,omitempty"`
+	UserType     string            `json:"user-type,omitempty"`
+	BadgeInfoRaw string            `json:"badge-info-raw,omitempty"`
+	BadgesRaw    string            `json:"badges-raw,omitempty"`
+	Username     string            `json:"username,omitempty"`
 }
 
 // Client state
@@ -441,4 +450,24 @@ type clientState struct {
 type EventHandler func(args ...any)
 
 // OutgoingTags represents tags to send with outgoing messages
-type OutgoingTags map[string]string
+type OutgoingTags struct {
+	ClientNonce      string            `json:"client-nonce,omitempty"`
+	ReplyParentMsgID string            `json:"reply-parent-msg-id,omitempty"`
+	// Extra allows for additional custom tags
+	Extra            map[string]string `json:"-"`
+}
+
+// GetExtraTag retrieves a value from the Extra map with a default fallback.
+// If the key doesn't exist, orElse is returned.
+func GetExtraTag(tags *OutgoingTags, key string, orElse string) string {
+	if tags == nil || tags.Extra == nil {
+		return orElse
+	}
+
+	val, ok := tags.Extra[key]
+	if !ok {
+		return orElse
+	}
+
+	return val
+}
