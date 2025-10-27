@@ -42,6 +42,23 @@ func (c *Client) Join(channel string) error {
 	)
 }
 
+// JoinMultiple joins 1 or more channels
+func (c *Client) JoinMultiple(channels []string) error {
+	if len(channels) == 0 {
+		return nil
+	}
+
+	channels = ChannelAll(channels)
+
+	return c.sendCommandWithResponse(
+		"",
+		fmt.Sprintf("JOIN %s", strings.Join(channels, ",")),
+		"_promiseJoin",
+		c.getPromiseDelay(),
+		nil,
+	)
+}
+
 // Part leaves a channel
 func (c *Client) Part(channel string) error {
 	channel = Channel(channel)

@@ -54,6 +54,21 @@ func Channel(str string) string {
 	return "#" + channel
 }
 
+// ChannelAll returns valid channel names for all values
+func ChannelAll(strs []string) []string {
+	if len(strs) == 0 {
+		return []string{}
+	}
+
+	res := make([]string, len(strs))
+
+	for idx, str := range strs {
+		res[idx] = Channel(str)
+	}
+
+	return res
+}
+
 // Username returns a valid username (without # prefix)
 func Username(str string) string {
 	username := strings.ToLower(strings.TrimSpace(str))
